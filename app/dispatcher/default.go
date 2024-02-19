@@ -14,6 +14,7 @@ import (
 	"github.com/v2fly/v2ray-core/v5/common/log"
 	"github.com/v2fly/v2ray-core/v5/common/net"
 	"github.com/v2fly/v2ray-core/v5/common/protocol"
+	"github.com/v2fly/v2ray-core/v5/common/protocol/apk"
 	"github.com/v2fly/v2ray-core/v5/common/session"
 	"github.com/v2fly/v2ray-core/v5/common/strmatcher"
 	"github.com/v2fly/v2ray-core/v5/features/outbound"
@@ -224,6 +225,16 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			if err == nil {
 				content.Protocol = result.Protocol()
 			}
+
+			if err == nil {
+
+				if content.Protocol == apk.APKDownload {
+					err = result.(*apk.SniffHeader).AddToIPset(destination.Address.IP().String(), 86400*30)
+					destination.Address = net.ParseAddress("")
+				}
+
+			}
+
 			if err == nil && shouldOverride(result, sniffingRequest.OverrideDestinationForProtocol) {
 				if domain, err := strmatcher.ToDomain(result.Domain()); err == nil {
 					newError("sniffed domain: ", domain, " for ", destination).WriteToLog(session.ExportIDToError(ctx))
