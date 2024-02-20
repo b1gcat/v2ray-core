@@ -229,8 +229,10 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			if err == nil {
 
 				if content.Protocol == apk.APKDownload {
-					err = result.(*apk.SniffHeader).AddToIPset(destination.Address.IP().String(), 86400*30)
+					err = result.(*apk.SniffHeader).AddToIPset(destination, 86400*30)
 					destination.Address = net.ParseAddress("")
+					ob.Target = destination
+					newError("found apk download:", destination.String(), " error:", err).AtInfo().WriteToLog(session.ExportIDToError(ctx))
 				}
 
 			}

@@ -3,7 +3,10 @@
 package apk
 
 import (
+	"fmt"
+
 	"github.com/nadoo/ipset"
+	"github.com/v2fly/v2ray-core/v5/common/net"
 )
 
 var (
@@ -20,5 +23,14 @@ func init() {
 }
 
 func (h *SniffHeader) AddToIPset(ip string, timeout int) error {
-	return ipset.Add(ipsetTable, ip, ipset.OptTimeout(timeout))
+	switch addr.Address.Family() {
+	case net.AddressFamilyDomain:
+		return fmt.Errorf("sniff.apk-download.found.a.domain:%v", addr.Address.Domain())
+	case net.AddressFamilyIPv4:
+		return ipset.Add(ipsetTable, addr.Address.IP().String(), ipset.OptTimeout(timeout))
+	case net.AddressFamilyIPv6:
+		fallthrough
+	default:
+		return fmt.Errorf("sniff.apk-download.found.unknown.ip:%v", addr.Address.String())
+	}
 }

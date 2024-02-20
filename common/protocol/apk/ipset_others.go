@@ -2,8 +2,19 @@
 
 package apk
 
-import "fmt"
+import (
+	"fmt"
 
-func (h *SniffHeader) AddToIPset(ip string, timeout int) error {
-	return fmt.Errorf("not support ipset module for %v/%v", ip, timeout)
+	"github.com/v2fly/v2ray-core/v5/common/net"
+)
+
+func (h *SniffHeader) AddToIPset(addr net.Destination, timeout int) error {
+	switch addr.Address.Family() {
+	case net.AddressFamilyDomain:
+		return fmt.Errorf("sniff.apk-download.found.a.domain:%v", addr.Address.Domain())
+	case net.AddressFamilyIPv4, net.AddressFamilyIPv6:
+		return fmt.Errorf("sniff.apk-download.found.a.ip:%v", addr.Address.IP().String())
+	default:
+		return fmt.Errorf("sniff.apk-download.found.unknown.ip:%v", addr.Address.String())
+	}
 }
