@@ -22,10 +22,10 @@ func init() {
 	ipset.Create(ipsetTable)
 }
 
-func (h *SniffHeader) AddToIPset(addr net.Destination, timeout int) error {
+func (h *SniffHeader) AddToIPset(addr net.Destination, timeout uint32) error {
 	switch addr.Address.Family() {
 	case net.AddressFamilyDomain:
-		return fmt.Errorf("sniff.apk-download.found.a.domain:%v", addr.Address.Domain())
+		return fmt.Errorf("sniff.apk-download.found.a.domain: %v", addr.Address.Domain())
 	case net.AddressFamilyIPv4:
 		return ipset.Add(ipsetTable, addr.Address.IP().String(), ipset.OptTimeout(timeout))
 	case net.AddressFamilyIPv6:
