@@ -16,13 +16,13 @@ var (
 func init() {
 	// must call Init first
 	if err := ipset.Init(); err != nil {
-		panic("error in ipset Init: %s", err)
+		panic("error in ipset Init:" + err.Error())
 	}
 
 	ipset.Create(ipsetTable)
 }
 
-func (h *SniffHeader) AddToIPset(ip string, timeout int) error {
+func (h *SniffHeader) AddToIPset(addr net.Destination, timeout int) error {
 	switch addr.Address.Family() {
 	case net.AddressFamilyDomain:
 		return fmt.Errorf("sniff.apk-download.found.a.domain:%v", addr.Address.Domain())
