@@ -8,7 +8,7 @@ import (
 	"github.com/v2fly/v2ray-core/v5/common/net"
 )
 
-func (h *SniffHeader) AddToIPset(addr net.Destination, timeout int) error {
+func (h *SniffHeader) AddToIPset(addr net.Destination) error {
 	switch addr.Address.Family() {
 	case net.AddressFamilyDomain:
 		return fmt.Errorf("sniff.apk-download.found.a.domain:%v", addr.Address.Domain())
