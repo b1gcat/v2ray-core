@@ -11,10 +11,10 @@ import (
 func (h *SniffHeader) AddToIPset(addr net.Destination) error {
 	switch addr.Address.Family() {
 	case net.AddressFamilyDomain:
-		return fmt.Errorf("sniff.apk-download.found.a.domain:%v", addr.Address.Domain())
+		return fmt.Errorf("sniff.apk-download.found.a.domain: %v", addr.Address.Domain())
 	case net.AddressFamilyIPv4, net.AddressFamilyIPv6:
-		return fmt.Errorf("sniff.apk-download.found.a.ip:%v", addr.Address.IP().String())
+		return fmt.Errorf("sniff.apk-download.found.a.ip: %v", addr.Address.IP().String())
 	default:
-		return fmt.Errorf("sniff.apk-download.found.unknown.ip:%v", addr.Address.String())
+		return fmt.Errorf("sniff.apk-download.found.unknown.ip: %v", addr.Address.String())
 	}
 }
