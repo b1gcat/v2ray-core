@@ -22,8 +22,6 @@ func init() {
 	if err := ipset.Init(); err != nil {
 		panic("error in ipset Init:" + err.Error())
 	}
-
-	ipset.Create(ipsetTable, ipset.OptTimeout(86400))
 }
 
 func (h *SniffHeader) AddToIPset(addr net.Destination) error {
