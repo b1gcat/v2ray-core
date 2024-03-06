@@ -5,11 +5,11 @@ import (
 
 	"github.com/v2fly/v2ray-core/v5/common"
 	"github.com/v2fly/v2ray-core/v5/common/net"
-	"github.com/v2fly/v2ray-core/v5/common/protocol/apk"
 	"github.com/v2fly/v2ray-core/v5/common/protocol/bittorrent"
 	"github.com/v2fly/v2ray-core/v5/common/protocol/http"
 	"github.com/v2fly/v2ray-core/v5/common/protocol/quic"
 	"github.com/v2fly/v2ray-core/v5/common/protocol/tls"
+	apk "github.com/v2fly/v2ray-core/v5/common/protocol/urlext"
 )
 
 type SniffResult interface {
@@ -35,7 +35,7 @@ type Sniffer struct {
 func NewSniffer(ctx context.Context) *Sniffer {
 	ret := &Sniffer{
 		sniffer: []protocolSnifferWithMetadata{
-			{func(c context.Context, b []byte) (SniffResult, error) { return apk.SniffApkDownload(b) }, false, net.Network_TCP},
+			{func(c context.Context, b []byte) (SniffResult, error) { return apk.SniffURLExtension(b) }, false, net.Network_TCP},
 			{func(c context.Context, b []byte) (SniffResult, error) { return http.SniffHTTP(b) }, false, net.Network_TCP},
 			{func(c context.Context, b []byte) (SniffResult, error) { return tls.SniffTLS(b) }, false, net.Network_TCP},
 			{func(c context.Context, b []byte) (SniffResult, error) { return quic.SniffQUIC(b) }, false, net.Network_UDP},

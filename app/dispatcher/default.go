@@ -14,7 +14,7 @@ import (
 	"github.com/v2fly/v2ray-core/v5/common/log"
 	"github.com/v2fly/v2ray-core/v5/common/net"
 	"github.com/v2fly/v2ray-core/v5/common/protocol"
-	"github.com/v2fly/v2ray-core/v5/common/protocol/apk"
+	apk "github.com/v2fly/v2ray-core/v5/common/protocol/urlext"
 	"github.com/v2fly/v2ray-core/v5/common/session"
 	"github.com/v2fly/v2ray-core/v5/common/strmatcher"
 	"github.com/v2fly/v2ray-core/v5/features/outbound"
@@ -228,13 +228,19 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 
 			if err == nil {
 
-				if content.Protocol == apk.APKDownload {
-					err = result.(*apk.SniffHeader).AddToIPset(destination)
-					newError("found apk download:", destination.String(), " error:", err).AtInfo().WriteToLog(session.ExportIDToError(ctx))
-					destination.Address = net.ParseAddress("")
-					ob.Target = destination
-				}
+				if content.Protocol == apk.URLExtension {
+					res := result.(*apk.SniffHeader)
 
+					for _, ext := range sniffingRequest.OverrideDestinationForProtocol {
+						if strings.Compare(ext, res.Ext) == 0 {
+							err = res.AddToIPset(destination)
+							newError("found disabled-url-extension:",
+								destination.String(), " output:", err).AtInfo().WriteToLog(session.ExportIDToError(ctx))
+							destination.Address = net.ParseAddress("")
+							ob.Target = destination
+						}
+					}
+				}
 			}
 
 			if err == nil && shouldOverride(result, sniffingRequest.OverrideDestinationForProtocol) {
