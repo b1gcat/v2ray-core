@@ -232,13 +232,15 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 					res := result.(*apk.SniffHeader)
 
 					for _, ext := range sniffingRequest.OverrideDestinationForProtocol {
-						if strings.Compare(ext, res.Ext) == 0 {
-							err = res.AddToIPset(destination)
-							newError("found disabled-url-extension:",
-								destination.String(), " output:", err).AtInfo().WriteToLog(session.ExportIDToError(ctx))
-							destination.Address = net.ParseAddress("")
-							ob.Target = destination
+						if strings.Compare(ext, res.Ext) != 0 {
+							continue
 						}
+						err = res.AddToIPset(destination)
+						newError("found disabled-url-extension:",
+							destination.String(), " output:", err).AtInfo().WriteToLog(session.ExportIDToError(ctx))
+						destination.Address = net.ParseAddress("")
+						ob.Target = destination
+						break
 					}
 				}
 			}
