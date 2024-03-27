@@ -73,6 +73,7 @@ func LookupIPWithOption(client Client, domain string, option IPOption) ([]net.IP
 			return nil, errors.New("dns.Client doesn't implement IPv6Lookup")
 		}
 	}
+
 	return client.LookupIP(domain)
 }
 

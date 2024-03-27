@@ -16,6 +16,7 @@ import (
 	"github.com/v2fly/v2ray-core/v5/app/dns/fakedns"
 	"github.com/v2fly/v2ray-core/v5/app/router"
 	"github.com/v2fly/v2ray-core/v5/common"
+	"github.com/v2fly/v2ray-core/v5/common/dnsstat"
 	"github.com/v2fly/v2ray-core/v5/common/errors"
 	"github.com/v2fly/v2ray-core/v5/common/net"
 	"github.com/v2fly/v2ray-core/v5/common/platform"
@@ -276,6 +277,8 @@ func (s *DNS) lookupIPInternal(domain string, option dns.IPOption) ([]net.IP, er
 
 	// Normalize the FQDN form query
 	domain = strings.TrimSuffix(domain, ".")
+
+	dnsstat.Stat().Insert(domain)
 
 	// Static host lookup
 	switch addrs := s.hosts.Lookup(domain, option); {
