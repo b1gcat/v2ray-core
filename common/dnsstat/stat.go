@@ -199,7 +199,7 @@ func (d *Dns) runCleanUp() {
 		clearTime, err := time.ParseDuration(fmt.Sprintf(
 			"-%dh", d.Retention))
 		if err != nil {
-			d.Logger.Error("dnsstat.runCleanUp.ParseDuration:", err.Error())
+			d.Logger.Error("[x] dnsstat.runCleanUp.ParseDuration:", err.Error())
 			return
 		}
 		timeWaterMaker := time.Now().Add(clearTime).Format("2006-01-02 15:04:05")
