@@ -72,6 +72,10 @@ func (d *Dns) Insert(domain string) error {
 	}
 
 	domain = strings.TrimSuffix(domain, ".")
+	dm := strings.Split(domain, ".")
+	if len(dm) > 2 {
+		domain = dm[len(dm)-2] + "." + dm[len(dm)-1]
+	}
 
 	//search
 	d.lock.Lock()
