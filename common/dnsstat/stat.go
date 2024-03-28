@@ -116,23 +116,18 @@ func (d *Dns) runReport() {
 		}
 		d.lock.Unlock()
 
-		type Record struct {
-			Items []Data `json:"items"`
-		}
 		type Report struct {
 			StartTime time.Time `json:"start_time"`
 			EndTime   time.Time `json:"end_time"`
 			RouterMac string    `json:"router_mac"`
 
-			Record Record `json:"record"`
+			Record []Data `json:"record"`
 		}
 		data := &Report{
 			RouterMac: d.Mac,
 			StartTime: time.Now(),
 			EndTime:   time.Now(),
-			Record: Record{
-				Items: items,
-			},
+			Record:    items,
 		}
 		aJson, err := json.Marshal(data)
 		if err != nil {
