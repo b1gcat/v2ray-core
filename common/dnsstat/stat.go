@@ -30,6 +30,7 @@ type Dns struct {
 	valid bool
 	lock  sync.RWMutex
 	db    *gorm.DB
+	last  time.Time
 }
 
 type Data struct {
@@ -123,9 +124,12 @@ func (d *Dns) runReport() {
 
 			Record []Data `json:"record"`
 		}
+		if d.last.IsZero() {
+			d.last = time.Now()
+		}
 		data := &Report{
 			RouterMac: d.Mac,
-			StartTime: time.Now(),
+			StartTime: d.last,
 			EndTime:   time.Now(),
 			Record:    items,
 		}
@@ -139,7 +143,7 @@ func (d *Dns) runReport() {
 			d.Logger.Error("runReport.postData:", err.Error())
 			continue
 		}
-
+		d.last = time.Now()
 		d.lock.Lock()
 		err = d.db.Raw("update data set count = ?", 0).Error
 		d.Logger.Infof("runReport.reset.counter:%v", err)
