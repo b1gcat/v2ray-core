@@ -149,7 +149,7 @@ func (d *Dns) runReport() {
 		}
 		d.last = time.Now()
 		d.lock.Lock()
-		err = d.db.Raw("update data set count = ?", 0).Error
+		err = d.db.Model(&Data{}).Where("1=1").Update("count", 0).Error
 		d.Logger.Infof("runReport.reset.counter:%v", err)
 		d.lock.Unlock()
 	}
