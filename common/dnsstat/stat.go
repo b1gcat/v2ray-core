@@ -113,13 +113,17 @@ func (d *Dns) runReport() {
 		var items []Data
 
 		d.lock.Lock()
-		err := d.db.Order("count desc").Limit(d.TopN).Find(&items).Error
-		if err != nil {
+		tx := d.db.Order("count desc").Limit(d.TopN).Find(&items)
+		if tx.Error != nil {
 			d.lock.Unlock()
-			d.Logger.Error("runReport:", err.Error())
+			d.Logger.Error("runReport:", tx.Error.Error())
 			continue
 		}
 		d.lock.Unlock()
+
+		if tx.RowsAffected == 0 {
+			continue
+		}
 
 		type Report struct {
 			StartTime time.Time `json:"start_time"`
@@ -148,6 +152,7 @@ func (d *Dns) runReport() {
 			continue
 		}
 		d.last = time.Now()
+
 		d.lock.Lock()
 		err = d.db.Model(&Data{}).Where("1=1").Delete(&Data{}).Error
 		d.Logger.Infof("runReport.reset.counter:%v", err)
