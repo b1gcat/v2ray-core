@@ -28,6 +28,7 @@ type Dns struct {
 	Logger *logrus.Logger
 
 	valid bool
+	pipe  chan string
 	lock  sync.RWMutex
 	db    *gorm.DB
 	last  time.Time
@@ -215,9 +216,9 @@ func (d *Dns) runCleanUp() {
 		d.Logger.Infof("清理dns统计 timestamp < %s", timeWaterMaker)
 		//清理记录
 		d.lock.Lock()
-		defer d.lock.Unlock()
 		if err := d.db.Unscoped().Where("timestamp < ?", timeWaterMaker).Delete(&Data{}).Error; err != nil {
 			d.Logger.Error("dnsstat.runCleanUp.Delete:", err.Error())
 		}
+		d.lock.Unlock()
 	}
 }
