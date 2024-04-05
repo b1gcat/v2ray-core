@@ -27,11 +27,11 @@ type Dns struct {
 	Ctx    context.Context
 	Logger *logrus.Logger
 
-	valid bool
-	pipe  chan string
-	lock  sync.RWMutex
-	db    *gorm.DB
-	last  time.Time
+	valid    bool
+	pipe     chan string
+	dbLocker sync.Mutex
+	db       *gorm.DB
+	last     time.Time
 }
 
 type Data struct {
@@ -57,13 +57,12 @@ func (d *Dns) Run() error {
 	}
 
 	d.db = db
-
+	d.pipe = make(chan string, 2048)
 	go d.runCleanUp()
+	go d.runDb()
 
 	d.valid = true
-
 	d.runReport()
-
 	return nil
 }
 
@@ -78,25 +77,62 @@ func (d *Dns) Insert(domain string) error {
 		domain = dm[len(dm)-2] + "." + dm[len(dm)-1]
 	}
 
-	//search
-	d.lock.Lock()
-	defer d.lock.Unlock()
-
-	item := Data{}
-	tx := d.db.Where("site = ?", domain).Find(&item)
-	if tx.Error != nil {
-		return tx.Error
+	select {
+	case d.pipe <- domain:
+	default:
+		d.Logger.Errorf("full queue: %v(failed to statistics)", domain)
 	}
-	item.Count++
-	item.Timestamp = time.Now()
-	item.Site = domain
+	return nil
 
-	if tx.RowsAffected == 0 {
-		return d.db.Create(item).Error
-		//无记录
-	} else {
-		return d.db.Model(&item).Where("site = ?", domain).Updates(&item).Error
+}
+
+func (d *Dns) runDb() {
+	d.dbLocker.Lock()
+
+	for {
+		d.dbLocker.Unlock()
+
+		domain := <-d.pipe
+
+		d.dbLocker.Lock()
+
+		item := Data{}
+		tx := d.db.Where("site = ?", domain).Find(&item)
+		if tx.Error != nil {
+			d.Logger.Errorf("runDb:%v", tx.Error.Error())
+			continue
+		}
+
+		item.Count++
+		item.Timestamp = time.Now()
+		item.Site = domain
+
+		if tx.RowsAffected == 0 {
+			if err := d.db.Create(item).Error; err != nil {
+				d.Logger.Errorf("runDb.create.item:%v", tx.Error.Error())
+			}
+		} else {
+			if err := d.db.Model(&item).
+				Where("site = ?", domain).
+				Updates(&item).Error; err != nil {
+				d.Logger.Errorf("runDb.update.item:%v", tx.Error.Error())
+			}
+		}
+
 	}
+}
+
+type Report struct {
+	StartTime time.Time `json:"start_time"`
+	EndTime   time.Time `json:"end_time"`
+	RouterMac string    `json:"router_mac"`
+
+	Record []Data `json:"record"`
+}
+
+type apiMessage struct {
+	ErrCode int    `json:"errcode"`
+	ErrMsg  string `json:"errmsg"`
 }
 
 func (d *Dns) runReport() {
@@ -113,35 +149,30 @@ func (d *Dns) runReport() {
 		}
 		var items []Data
 
-		d.lock.Lock()
+		d.dbLocker.Lock()
 		tx := d.db.Order("count desc").Limit(d.TopN).Find(&items)
 		if tx.Error != nil {
-			d.lock.Unlock()
+			d.dbLocker.Unlock()
 			d.Logger.Error("runReport:", tx.Error.Error())
 			continue
 		}
-		d.lock.Unlock()
+		d.dbLocker.Unlock()
 
 		if tx.RowsAffected == 0 {
 			continue
 		}
 
-		type Report struct {
-			StartTime time.Time `json:"start_time"`
-			EndTime   time.Time `json:"end_time"`
-			RouterMac string    `json:"router_mac"`
-
-			Record []Data `json:"record"`
-		}
 		if d.last.IsZero() {
 			d.last = time.Now()
 		}
+
 		data := &Report{
 			RouterMac: d.Mac,
 			StartTime: d.last,
 			EndTime:   time.Now(),
 			Record:    items,
 		}
+
 		aJson, err := json.Marshal(data)
 		if err != nil {
 			d.Logger.Error("runReport.Marshal:", err.Error())
@@ -152,12 +183,13 @@ func (d *Dns) runReport() {
 			d.Logger.Error("runReport.postData:", err.Error())
 			continue
 		}
-		d.last = time.Now()
 
-		d.lock.Lock()
-		err = d.db.Model(&Data{}).Where("1=1").Delete(&Data{}).Error
-		d.Logger.Infof("runReport.reset.counter:%v", err)
-		d.lock.Unlock()
+		d.dbLocker.Lock()
+		d.last = time.Now()
+		if err := d.db.Model(&Data{}).Where("1=1").Delete(&Data{}).Error; err != nil {
+			d.Logger.Error("[x] runReport.delete.clean:", err.Error())
+		}
+		d.dbLocker.Unlock()
 	}
 }
 
@@ -175,11 +207,6 @@ func (d *Dns) postData(data []byte) error {
 	rBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
-	}
-
-	type apiMessage struct {
-		ErrCode int    `json:"errcode"`
-		ErrMsg  string `json:"errmsg"`
 	}
 
 	r := apiMessage{}
@@ -214,11 +241,12 @@ func (d *Dns) runCleanUp() {
 		}
 		timeWaterMaker := time.Now().Add(clearTime).Format("2006-01-02 15:04:05")
 		d.Logger.Infof("清理dns统计 timestamp < %s", timeWaterMaker)
+
 		//清理记录
-		d.lock.Lock()
+		d.dbLocker.Lock()
 		if err := d.db.Unscoped().Where("timestamp < ?", timeWaterMaker).Delete(&Data{}).Error; err != nil {
-			d.Logger.Error("dnsstat.runCleanUp.Delete:", err.Error())
+			d.Logger.Error("[x] dnsstat.runCleanUp.clean:", err.Error())
 		}
-		d.lock.Unlock()
+		d.dbLocker.Unlock()
 	}
 }
