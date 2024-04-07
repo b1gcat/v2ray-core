@@ -222,7 +222,7 @@ func (d *Dns) postData(data []byte) error {
 }
 
 func (d *Dns) runCleanUp() {
-	t := time.NewTicker(time.Hour)
+	t := time.NewTicker(time.Hour * time.Duration(d.Retention))
 	defer t.Stop()
 
 	for {
