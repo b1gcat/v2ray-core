@@ -576,7 +576,7 @@ func ClientHandshake4(request *protocol.RequestHeader, reader io.Reader, writer 
 		return newError("unexpected version of the reply code: ", b.Byte(0))
 	}
 	if b.Byte(1) != socks4RequestGranted {
-		return newError("server rejects request: ", b.Byte(1))
+		return newError("server rejects request: ", b.Byte(1), request.Address)
 	}
 	return nil
 }
