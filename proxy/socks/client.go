@@ -2,6 +2,7 @@ package socks
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	core "github.com/v2fly/v2ray-core/v5"
@@ -77,7 +78,7 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 		dest = server.Destination()
 		rawConn, err := dialer.Dial(ctx, dest)
 		if err != nil {
-			return err
+			return fmt.Errorf("%v[%v]", err, dest)
 		}
 		conn = rawConn
 
