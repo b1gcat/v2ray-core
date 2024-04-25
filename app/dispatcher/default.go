@@ -299,7 +299,9 @@ func sniffer(ctx context.Context, cReader *cachedReader, metadataOnly bool, netw
 		return metaresult, nil
 	}
 	if contentErr == nil && metadataErr == nil {
-		return CompositeResult(metaresult, contentResult), nil
+		if contentResult.Protocol() != apk.URLExtension {
+			return CompositeResult(metaresult, contentResult), nil
+		}
 	}
 	return contentResult, contentErr
 }
