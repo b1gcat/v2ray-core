@@ -52,6 +52,7 @@ func getFileExtensionFromUrl(raw string) (string, error) {
 			break
 		}
 	}
+
 	u, err := url.Parse(fakeUrl)
 	if err != nil {
 		return "", err

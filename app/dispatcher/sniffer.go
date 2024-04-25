@@ -31,7 +31,7 @@ type Sniffer struct {
 func NewSniffer(ctx context.Context) *Sniffer {
 	ret := &Sniffer{
 		sniffer: []protocolSnifferWithMetadata{
-			{func(c context.Context, b []byte) (SniffResult, error) { return apk.SniffURLExtension(b) }, true, net.Network_TCP},
+			{func(c context.Context, b []byte) (SniffResult, error) { return apk.SniffURLExtension(b) }, false, net.Network_TCP},
 			//	{func(c context.Context, b []byte) (SniffResult, error) { return http.SniffHTTP(b) }, false, net.Network_TCP},
 			//	{func(c context.Context, b []byte) (SniffResult, error) { return tls.SniffTLS(b) }, false, net.Network_TCP},
 			//		{func(c context.Context, b []byte) (SniffResult, error) { return quic.SniffQUIC(b) }, false, net.Network_UDP},
@@ -62,6 +62,7 @@ func (s *Sniffer) Sniff(c context.Context, payload []byte, network net.Network) 
 		if si.network != network {
 			continue
 		}
+
 		result, err := s(c, payload)
 		if err == common.ErrNoClue {
 			pendingSniffer = append(pendingSniffer, si)
