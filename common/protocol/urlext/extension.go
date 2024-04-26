@@ -3,7 +3,6 @@ package apk
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"net/url"
 	"strings"
 
@@ -109,7 +108,7 @@ func CompileMatcherUrlPath(list []string) {
 			rules = append(rules, urlPath{Type: strmatcher.Domain, Domain: tv[1]})
 		}
 	}
-	fmt.Println("*****xxxxxxxx", rules)
+
 	for _, rule := range rules {
 		matcher, err := rule.Type.New(rule.Domain)
 		common.Must(err)
