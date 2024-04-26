@@ -14,7 +14,7 @@ import (
 	"github.com/v2fly/v2ray-core/v5/common/log"
 	"github.com/v2fly/v2ray-core/v5/common/net"
 	"github.com/v2fly/v2ray-core/v5/common/protocol"
-	apk "github.com/v2fly/v2ray-core/v5/common/protocol/urlext"
+	urlpath "github.com/v2fly/v2ray-core/v5/common/protocol/urlext"
 	"github.com/v2fly/v2ray-core/v5/common/session"
 	"github.com/v2fly/v2ray-core/v5/common/strmatcher"
 	"github.com/v2fly/v2ray-core/v5/features/outbound"
@@ -227,22 +227,14 @@ func (d *DefaultDispatcher) Dispatch(ctx context.Context, destination net.Destin
 			}
 
 			if err == nil {
-
-				if content.Protocol == apk.URLExtension {
-					res := result.(*apk.SniffHeader)
-
-					for _, ext := range sniffingRequest.OverrideDestinationForProtocol {
-						if strings.Compare(ext, res.Ext) != 0 {
-							continue
-						}
-						err = res.AddToIPset(destination)
-						newError("found disabled-url-extension:",
-							destination.String(), " output:", err).AtInfo().WriteToLog(session.ExportIDToError(ctx))
-						destination.Address = net.ParseAddress("")
-						ob.Target = destination
-						break
-					}
+				if content.Protocol == urlpath.URLExtension {
+					err = urlpath.AddToIPset(destination)
+					newError("found disabled-url-path:",
+						destination.String(), " output:", err).AtInfo().WriteToLog(session.ExportIDToError(ctx))
+					destination.Address = net.ParseAddress("")
+					ob.Target = destination
 				}
+
 			}
 
 			if err == nil && shouldOverride(result, sniffingRequest.OverrideDestinationForProtocol) {
@@ -299,9 +291,7 @@ func sniffer(ctx context.Context, cReader *cachedReader, metadataOnly bool, netw
 		return metaresult, nil
 	}
 	if contentErr == nil && metadataErr == nil {
-		if contentResult.Protocol() != apk.URLExtension {
-			return CompositeResult(metaresult, contentResult), nil
-		}
+		return CompositeResult(metaresult, contentResult), nil
 	}
 	return contentResult, contentErr
 }

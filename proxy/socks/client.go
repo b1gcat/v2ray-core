@@ -143,12 +143,12 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 	if request.Version == socks4Version {
 		err = ClientHandshake4(request, conn, conn)
 		if err != nil {
-			return newError("failed to establish connection to server").AtWarning().Base(err)
+			return newError("failed to establish connection to server:", dest).AtWarning().Base(err)
 		}
 	} else {
 		udpRequest, err = ClientHandshake(request, conn, conn)
 		if err != nil {
-			return newError("failed to establish connection to server").AtWarning().Base(err)
+			return newError("failed to establish connection to server:", dest).AtWarning().Base(err)
 		}
 	}
 

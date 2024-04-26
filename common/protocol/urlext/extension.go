@@ -3,17 +3,19 @@ package apk
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/v2fly/v2ray-core/v5/common"
+	"github.com/v2fly/v2ray-core/v5/common/strmatcher"
 )
 
 var (
 	URLExtension = "URL-extension"
 )
 
-type SniffHeader struct {
-	Ext string
-}
+type SniffHeader struct{}
 
 func (h *SniffHeader) Protocol() string {
 	return URLExtension
@@ -30,20 +32,34 @@ func SniffURLExtension(b []byte) (*SniffHeader, error) {
 		return nil, errNotExt
 	}
 
+	var path string
+	var err error
+
 	if !bytes.Equal(b[:5], []byte("GET /")) {
+		if !bytes.Equal(b[:6], []byte("POST /")) {
+			return nil, errNotExt
+		}
+
+		path, err = getPathFromUrl(string(b), 5)
+		if err != nil {
+			return nil, errNotExt
+		}
+	} else {
+		path, err = getPathFromUrl(string(b), 4)
+		if err != nil {
+			return nil, errNotExt
+		}
+	}
+
+	if !findmatcherUrlPath(path) {
 		return nil, errNotExt
 	}
 
-	ext, err := getFileExtensionFromUrl(string(b))
-	if err != nil {
-		return nil, errNotExt
-	}
-
-	return &SniffHeader{Ext: ext}, nil
+	return &SniffHeader{}, nil
 }
 
-func getFileExtensionFromUrl(raw string) (string, error) {
-	start := 4 //GET /
+func getPathFromUrl(raw string, idx int) (string, error) {
+	start := idx
 	fakeUrl := ""
 
 	for k, v := range raw {
@@ -57,9 +73,52 @@ func getFileExtensionFromUrl(raw string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	pos := strings.LastIndex(u.Path, ".")
-	if pos == -1 {
-		return "", errors.New("couldn't find a period to indicate a file extension")
+	path := u.Path
+	if u.RawQuery != "" {
+		path += "?" + u.RawQuery
 	}
-	return u.Path[pos+1 : len(u.Path)], nil
+	return path, nil
+}
+
+var (
+	matcherURlPath = strmatcher.NewMphIndexMatcher()
+)
+
+func CompileMatcherUrlPath(list []string) {
+	type urlPath struct {
+		Type   strmatcher.Type
+		Domain string
+	}
+	rules := make([]urlPath, 0)
+	for _, v := range list {
+		tv := strings.Split(v, ":")
+		if len(tv) != 2 {
+			continue
+		}
+		switch tv[0] {
+		case "full":
+			rules = append(rules, urlPath{Type: strmatcher.Full, Domain: tv[1]})
+
+		case "regex":
+			rules = append(rules, urlPath{Type: strmatcher.Regex, Domain: tv[1]})
+
+		case "keyword":
+			rules = append(rules, urlPath{Type: strmatcher.Substr, Domain: tv[1]})
+
+		case "suffix":
+			rules = append(rules, urlPath{Type: strmatcher.Domain, Domain: tv[1]})
+		}
+	}
+	fmt.Println("*****xxxxxxxx", rules)
+	for _, rule := range rules {
+		matcher, err := rule.Type.New(rule.Domain)
+		common.Must(err)
+		matcherURlPath.Add(matcher)
+	}
+
+	matcherURlPath.Build()
+}
+
+func findmatcherUrlPath(path string) bool {
+	return matcherURlPath.MatchAny(path)
 }

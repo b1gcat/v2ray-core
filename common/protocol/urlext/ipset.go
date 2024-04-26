@@ -26,19 +26,19 @@ func init() {
 	ipset.Create(ipsetTable, ipset.OptTimeout(86400))
 }
 
-func (h *SniffHeader) AddToIPset(addr net.Destination) error {
+func AddToIPset(addr net.Destination) error {
 	switch addr.Address.Family() {
 	case net.AddressFamilyDomain:
 		ips, err := lookUpHost(addr.Address.Domain())
 		if err != nil {
-			return fmt.Errorf("sniff.apk-download.found.a.domain: %v:%v",
+			return fmt.Errorf("urlpath.found.a.domain: %v:%v",
 				addr.Address.Domain(), err.Error())
 		}
 		for _, ip := range ips {
 			ipset.Add(ipsetTable, ip, ipset.OptTimeout(86400))
 		}
 
-		return fmt.Errorf("sniff.apk-download.found.a.domain: %v insert IP %v",
+		return fmt.Errorf("urlpath.found.a.domain: %v insert IP %v",
 			addr.Address.Domain(), ips)
 	case net.AddressFamilyIPv4:
 		ipset.Add(ipsetTable, addr.Address.IP().String(), ipset.OptTimeout(86400))
@@ -46,7 +46,7 @@ func (h *SniffHeader) AddToIPset(addr net.Destination) error {
 	case net.AddressFamilyIPv6:
 		fallthrough
 	default:
-		return fmt.Errorf("sniff.apk-download.found.unknown.ip: %v", addr.Address.String())
+		return fmt.Errorf("urlpath.found.unknown.ip: %v", addr.Address.String())
 	}
 }
 
