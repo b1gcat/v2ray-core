@@ -58,15 +58,7 @@ func SniffURLExtension(b []byte) (*SniffHeader, error) {
 }
 
 func getPathFromUrl(raw string, idx int) (string, error) {
-	start := idx
-	fakeUrl := ""
-
-	for k, v := range raw {
-		if v == ' ' && k > 3 {
-			fakeUrl = "http://1.2.3.4" + raw[start:k]
-			break
-		}
-	}
+	fakeUrl := "http://1.2.3.4" + strings.Split(raw[idx:], " ")[0]
 
 	u, err := url.Parse(fakeUrl)
 	if err != nil {
