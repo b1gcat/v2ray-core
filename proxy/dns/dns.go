@@ -160,6 +160,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, d internet.
 
 	var connReader dns_proto.MessageReader
 	var connWriter dns_proto.MessageWriter
+
 	if dest.Network == net.Network_TCP {
 		connReader = dns_proto.NewTCPReader(buf.NewReader(conn))
 		connWriter = &dns_proto.TCPWriter{
@@ -192,7 +193,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, d internet.
 
 			timer.Update()
 
-			if !h.isOwnLink(ctx) {
+			if dest.Network != net.Network_TCP && !h.isOwnLink(ctx) {
 				isIPQuery, domain, id, qType := parseIPQuery(b.Bytes())
 				if isIPQuery {
 					if domain, err := strmatcher.ToDomain(domain); err == nil {
