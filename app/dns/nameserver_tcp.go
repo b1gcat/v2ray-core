@@ -56,7 +56,7 @@ func NewTCPNameServer(url *url.URL, dispatcher routing.Dispatcher) (*TCPNameServ
 			net.ConnectionOutputMulti(link.Reader),
 		), nil
 	}
-
+	newError("DNS: created TCP client initialized for ", url.String()).AtInfo().WriteToLog()
 	return s, nil
 }
 

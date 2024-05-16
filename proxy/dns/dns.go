@@ -193,7 +193,7 @@ func (h *Handler) Process(ctx context.Context, link *transport.Link, d internet.
 
 			timer.Update()
 
-			if dest.Network != net.Network_TCP && !h.isOwnLink(ctx) {
+			if !h.isOwnLink(ctx) {
 				isIPQuery, domain, id, qType := parseIPQuery(b.Bytes())
 				if isIPQuery {
 					if domain, err := strmatcher.ToDomain(domain); err == nil {
