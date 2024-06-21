@@ -462,13 +462,19 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 	if err := buf.WriteAllBytes(writer, b.Bytes()); err != nil {
 		return nil, err
 	}
+	//处理应答
 	b.Clear()
-	//处理请求: fixme - todo something
 	if _, err := b.ReadFullFrom(reader, 2); err != nil {
 		return nil, err
 	}
-	b.Clear()
+	if b.Byte(0) != socks5Version {
+		return nil, newError("unexpected server version: ", b.Byte(0)).AtWarning()
+	}
+	if b.Byte(1) != authByte {
+		return nil, newError("auth method not supported.").AtWarning()
+	}
 
+	b.Clear()
 	if authByte == authPassword {
 		account := request.User.Account.(*Account)
 
@@ -493,25 +499,6 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 			return nil, newError("server rejects account: ", b.Byte(1))
 		}
 	}
-
-	/*
-		if b.Byte(0) != socks5Version {
-			return nil, newError("unexpected server version: ", b.Byte(0)).AtWarning()
-		}
-		if b.Byte(1) != authByte {
-			return nil, newError("auth method not supported.").AtWarning()
-		}
-
-		if authByte == authPassword {
-			b.Clear()
-			if _, err := b.ReadFullFrom(reader, 2); err != nil {
-				return nil, err
-			}
-			if b.Byte(1) != 0x00 {
-				return nil, newError("server rejects account: ", b.Byte(1))
-			}
-		}
-	*/
 
 	b.Clear()
 
