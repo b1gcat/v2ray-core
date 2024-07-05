@@ -122,8 +122,8 @@ func SessionDefault() Session {
 			// So that this value will not indicate server identity
 			Handshake:      time.Second * 30,
 			ConnectionIdle: time.Second * 60,
-			UplinkOnly:     time.Second * 1,
-			DownlinkOnly:   time.Second * 1,
+			UplinkOnly:     time.Second * 6, //原来是1
+			DownlinkOnly:   time.Second * 6, //原来是1
 		},
 		Stats: Stats{
 			UserUplink:   false,
