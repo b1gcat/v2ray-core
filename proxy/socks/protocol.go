@@ -513,7 +513,8 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		}
 	*/
 
-	if err := addrParser.WriteAddressPort(b, net.AnyIP, 0x00, 0x00); err != nil {
+	assoPort := net.Port(0)
+	if err := addrParser.WriteAddressPort(b, net.AnyIP, assoPort); err != nil {
 		return nil, err
 	}
 
