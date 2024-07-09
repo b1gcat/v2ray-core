@@ -26,6 +26,7 @@ func Run(ctx context.Context, tasks ...func() error) error {
 		<-s.Wait()
 		go func(f func() error) {
 			err := f()
+
 			if err == nil {
 				s.Signal()
 				return

@@ -219,7 +219,7 @@ func (c *Client) Process(ctx context.Context, link *transport.Link, dialer inter
 
 	responseDonePost := task.OnSuccess(responseFunc, task.Close(link.Writer))
 	if err := task.Run(ctx, requestFunc, responseDonePost); err != nil {
-		return newError("connection ends").Base(err)
+		return newError("connection.task ends").Base(err)
 	}
 
 	return nil
