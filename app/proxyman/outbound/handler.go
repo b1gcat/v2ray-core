@@ -174,6 +174,7 @@ func (h *Handler) Dispatch(ctx context.Context, link *transport.Link) {
 		if err := h.proxy.Process(ctx, link, h); err != nil {
 			// Ensure outbound ray is properly closed.
 			err := newError("failed to process outbound traffic").Base(err)
+
 			session.SubmitOutboundErrorToOriginator(ctx, err)
 			err.WriteToLog(session.ExportIDToError(ctx))
 			common.Interrupt(link.Writer)

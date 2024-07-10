@@ -496,7 +496,7 @@ func ClientHandshake(request *protocol.RequestHeader, reader io.Reader, writer i
 		}
 
 		if b.Byte(1) != 0x00 {
-			return nil, newError("server rejects account: ", b.Byte(1))
+			return nil, newError("server rejects account: ", b.Byte(1)).AtWarning()
 		}
 	}
 
