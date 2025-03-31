@@ -1,20 +1,19 @@
 {
-    "routing": {
-      "domainStrategy": "IPOnDemand",
-      "rules": [
-        {
-          "domainMatcher": "mph",
-          "type": "field",
-          "domain": ["geosite:category-white-all"],
-          "outboundTag": "direct"
-        },
-        {
-          "domainMatcher": "mph",
-          "type": "field",
-          "domain": ["geosite:category-black-all"],
-          "outboundTag": "block"
-        }
-      ]
-    }
+  "routing": {
+    "domainStrategy": "IPOnDemand",
+    "rules": [
+      {
+        "domainMatcher": "mph",
+        "type": "field",
+        "domain": ["geosite:white"],
+        "outboundTag": "direct"
+      },
+      {
+        "domainMatcher": "mph",
+        "type": "field",
+        "domain": ["geosite:black"],
+        "outboundTag": "block"
+      }
+    ]
   }
-  
+}

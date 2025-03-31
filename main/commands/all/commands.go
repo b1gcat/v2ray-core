@@ -16,6 +16,7 @@ func init() {
 		tls.CmdTLS,
 		cmdUUID,
 		cmdVerify,
+		cmdGeoSite,
 
 		// documents
 		docFormat,

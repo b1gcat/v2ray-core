@@ -235,8 +235,15 @@ func (v *InboundTagMatcher) Apply(ctx routing.Context) bool {
 		return false
 	}
 	for _, t := range v.tags {
-		if t == tag {
-			return true
+		//add by b1gcat support prefix tag
+		if strings.HasPrefix(t, "pfx:") {
+			if strings.HasPrefix(tag, t[4:]) {
+				return true
+			}
+		} else {
+			if t == tag {
+				return true
+			}
 		}
 	}
 	return false
