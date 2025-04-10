@@ -1,0 +1,12 @@
+{
+  "routing": {
+    "domainStrategy": "IPOnDemand",
+    "rules": [
+      {
+        "inboundTag": ["pfx:dns-","pfx:transparent-","pfx:localside-s5-"],
+        "type": "field",
+        "outboundTag": "append:proxy-s5-"
+      }
+    ]
+  }
+}

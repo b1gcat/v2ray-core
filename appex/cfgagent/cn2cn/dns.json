@@ -1,0 +1,19 @@
+{
+  "dns": {
+    "disableFallback": false,
+    "queryStrategy": "UseIPv4",
+    "disableCache": true,
+    "servers": [
+      {
+        "tag": "1:dns-localside-s5-xxxx",
+        "address": "8.8.8.8",
+        "skipFallback": false
+      },
+      {
+        "tag": "2:dns-localside-s5-xxxx",
+        "address": "223.5.5.5",
+        "skipFallback": false
+      }
+    ]
+  }
+}

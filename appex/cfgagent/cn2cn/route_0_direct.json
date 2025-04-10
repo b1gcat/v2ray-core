@@ -1,0 +1,21 @@
+{
+    "routing": {
+      "domainStrategy": "IPOnDemand",
+      "rules": [
+        {
+          "type": "field",
+          "inboundTag": ["pfx:transparent-","pfx:localside-s5-"],
+          "port": 53,
+          "network": "udp",
+          "outboundTag": "dns-out"
+        },
+        {
+          "type": "field",
+          "port": 123,
+          "network": "udp",
+          "outboundTag": "direct"
+        }
+      ]
+    }
+  }
+  
