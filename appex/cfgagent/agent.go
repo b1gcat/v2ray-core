@@ -2,33 +2,14 @@ package cfgagent
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients"
-	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/common/constant"
-	"github.com/nacos-group/nacos-sdk-go/v2/model"
 	"github.com/nacos-group/nacos-sdk-go/v2/vo"
+	"github.com/sirupsen/logrus"
 )
 
-type cfgState struct {
-	item   model.ConfigItem
-	inUsed bool
-}
-
-type ConfigClient struct {
-	Username    string
-	Password    string
-	ServerAddr  string
-	NamespaceID string
-	GroupID     string
-	Number      int
-
-	client config_client.IConfigClient
-	oldCfg map[string]*cfgState
-}
-
-func (cfg *ConfigClient) NewClient() error {
+func (cfg *ConfigClient) newClient() error {
 	// 创建客户端配置
 	clientConfig := *constant.NewClientConfig(
 		constant.WithNamespaceId(cfg.NamespaceID),
@@ -61,21 +42,11 @@ func (cfg *ConfigClient) NewClient() error {
 	}
 
 	cfg.client = configClient
-	cfg.oldCfg = make(map[string]*cfgState)
+
 	return nil
 }
 
-// 封装函数用于检查配置是否更新
-func isConfigUpdated(newItem, oldItem *cfgState) bool {
-	return newItem.item.Md5 != oldItem.item.Md5
-}
-
-// 封装函数用于更新日志记录
-func updateLogEntry(log map[string]string, action, dataID string) {
-	log[action] = strings.TrimSpace(fmt.Sprintf("%s %s", log[action], dataID))
-}
-
-func (cfg *ConfigClient) LoadAllConfig() (map[string]string, error) {
+func (cfg *ConfigClient) hotLoadConfig() error {
 	// 列出指定命名空间下的所有配置
 	listConfig, err := cfg.client.SearchConfig(vo.SearchConfigParam{
 		Search:   "blur",
@@ -85,42 +56,49 @@ func (cfg *ConfigClient) LoadAllConfig() (map[string]string, error) {
 		Group:    cfg.GroupID,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to search config: %w", err)
+		return fmt.Errorf("failed to search config: %w", err)
 	}
 
-	newCfg := make(map[string]*cfgState)
+	// 记录当前存在的配置的 DataId
 	for _, item := range listConfig.PageItems {
-		newCfg[item.DataId] = &cfgState{
+
+		// 监听配置变化
+		// 检查是否已经存在配置隧道
+		if _, ok := cfg.Private.Load(item.DataId); ok {
+			continue
+		}
+		if err = cfg.client.ListenConfig(vo.ConfigParam{
+			DataId: item.DataId,
+			Group:  item.Group,
+			OnChange: func(namespace, group, dataId, data string) {
+
+				if data == "" {
+					// 删除配置隧道
+					cfg.Private.Delete(dataId)
+					// 释放资源
+					cfg.client.CancelListenConfig(vo.ConfigParam{
+						DataId: dataId,
+						Group:  group,
+					})
+					logrus.Infof("Tunnel deleted:namespace %s group %s, zdataId: %s",
+						namespace, group, dataId)
+					return
+				}
+
+				logrus.Infof("Config changed: namespace %s group %s, zdataId: %s",
+					namespace, group, dataId)
+			},
+		}); err != nil {
+			return fmt.Errorf("failed to listen config: %w", err)
+		}
+		// 新增配置隧道
+		cfg.Private.Store(item.DataId, &cfgState{
 			item:   item,
 			inUsed: false,
-		}
+		})
+		logrus.Infof("New tunnel: namespace %s group %s, dataId: %s",
+			cfg.NamespaceID, item.Group, item.DataId)
 	}
 
-	updateLog := make(map[string]string, 0)
-
-	// 处理更新和新增
-	for dataID, newItem := range newCfg {
-		if oldItem, exists := cfg.oldCfg[dataID]; exists {
-			if isConfigUpdated(newItem, oldItem) {
-				// 更新操作
-				updateLogEntry(updateLog, "update", dataID)
-			}
-		} else {
-			// 新增操作
-			updateLogEntry(updateLog, "add", dataID)
-		}
-	}
-
-	// 处理删除
-	for dataID := range cfg.oldCfg {
-		if _, exists := newCfg[dataID]; !exists {
-			// 删除操作
-			updateLogEntry(updateLog, "delete", dataID)
-		}
-	}
-
-	// 更新旧配置
-	cfg.oldCfg = newCfg
-
-	return updateLog, nil
+	return nil
 }

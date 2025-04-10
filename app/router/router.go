@@ -4,6 +4,7 @@ package router
 
 import (
 	"context"
+	"strings"
 
 	core "github.com/v2fly/v2ray-core/v5"
 	"github.com/v2fly/v2ray-core/v5/common"
@@ -80,6 +81,24 @@ func (r *Router) PickRoute(ctx routing.Context) (routing.Route, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	//add by b1gcat support prefix tag: append
+	if strings.HasPrefix(tag, "append:") {
+		// 声明 outboundTag 变量
+		outboundTag := tag[7:]
+		inboundTag := ctx.GetInboundTag()
+		// 查找最后一个 - 的位置
+		lastIndex := strings.LastIndex(inboundTag, "-")
+		if lastIndex != -1 {
+			// 提取最后一个 xxx
+			suffix := inboundTag[lastIndex+1:]
+			// 拼接 outboundTag
+			outboundTag = outboundTag + suffix
+		}
+		tag = outboundTag
+	}
+	//b1gcat support prefix tag end
+
 	return &Route{Context: ctx, outboundTag: tag}, nil
 }
 
