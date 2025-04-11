@@ -192,55 +192,10 @@ iptables -t mangle -A V2RAY -j RETURN -m mark --mark ${MARK}
 iptables -t mangle -A V2RAY -m set --match-set V2RAY_LOCAL_NETWORK dst -p tcp -j RETURN 
 iptables -t mangle -A V2RAY -m set --match-set V2RAY_LOCAL_NETWORK dst -p udp ! --dport 53 -j RETURN 
 
+iptables -t mangle -D V2RAY -p udp -j TPROXY --on-ip 127.0.0.1 --on-port 0 --tproxy-mark 1
+iptables -t mangle -D V2RAY -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port 0 --tproxy-mark 1
+
 # apply
 iptables -t mangle -A PREROUTING -j V2RAY 
     `
 )
-
-// 添加 redirect 规则
-func addRedirectRule(redirectPort string) {
-	rule := `iptables -t mangle -A V2RAY -p udp -j TPROXY --on-ip 127.0.0.1 --on-port ` + redirectPort + ` --tproxy-mark 1`
-	ruleTCP := `iptables -t mangle -A V2RAY -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port ` + redirectPort + ` --tproxy-mark 1`
-
-	// 执行 UDP 规则
-	cmd := exec.Command("bash", "-c", rule)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		logrus.Errorf("Failed to add UDP redirect rule: %v, output: %s", err, string(output))
-	} else {
-		logrus.Infof("Successfully added UDP redirect rule with port %s", redirectPort)
-	}
-
-	// 执行 TCP 规则
-	cmd = exec.Command("bash", "-c", ruleTCP)
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		logrus.Errorf("Failed to add TCP redirect rule: %v, output: %s", err, string(output))
-	} else {
-		logrus.Infof("Successfully added TCP redirect rule with port %s", redirectPort)
-	}
-}
-
-// 删除 redirect 规则
-func deleteRedirectRule(redirectPort string) {
-	rule := `iptables -t mangle -D V2RAY -p udp -j TPROXY --on-ip 127.0.0.1 --on-port ` + redirectPort + ` --tproxy-mark 1`
-	ruleTCP := `iptables -t mangle -D V2RAY -p tcp -j TPROXY --on-ip 127.0.0.1 --on-port ` + redirectPort + ` --tproxy-mark 1`
-
-	// 执行 UDP 规则删除
-	cmd := exec.Command("bash", "-c", rule)
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		logrus.Errorf("Failed to delete UDP redirect rule: %v, output: %s", err, string(output))
-	} else {
-		logrus.Infof("Successfully deleted UDP redirect rule with port %s", redirectPort)
-	}
-
-	// 执行 TCP 规则删除
-	cmd = exec.Command("bash", "-c", ruleTCP)
-	output, err = cmd.CombinedOutput()
-	if err != nil {
-		logrus.Errorf("Failed to delete TCP redirect rule: %v, output: %s", err, string(output))
-	} else {
-		logrus.Infof("Successfully deleted TCP redirect rule with port %s", redirectPort)
-	}
-}

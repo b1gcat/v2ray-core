@@ -92,7 +92,7 @@ func (cfg *ConfigClient) hotLoadConfig() error {
 			return fmt.Errorf("failed to listen config: %w", err)
 		}
 		// 新增配置隧道
-		cfg.Private.Store(item.DataId, &cfgState{
+		cfg.Private.Store(item.DataId, &tunnelState{
 			item:   item,
 			inUsed: false,
 		})

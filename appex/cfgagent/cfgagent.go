@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/v2fly/v2ray-core/v5/appex/arp"
 )
 
 var (
@@ -27,6 +28,12 @@ func restart() {
 		context.WithCancel(context.Background())
 
 	runRule(cfgClient.context)
+
+	cfgClient.elink = initElinikClient()
+
+	go arp.StartARPListener(func(event arp.ARPEvent) {
+		cfgClient.handleARP(event)
+	})
 
 	if err := cfgClient.newClient(); err != nil {
 		logrus.Error("Failed to create new client: ", err)

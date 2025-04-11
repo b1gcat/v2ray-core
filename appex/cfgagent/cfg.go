@@ -15,33 +15,61 @@ import (
 
 	"github.com/nacos-group/nacos-sdk-go/v2/clients/config_client"
 	"github.com/nacos-group/nacos-sdk-go/v2/model"
+	"github.com/v2fly/v2ray-core/v5/app/proxyman/command"
 )
 
 var (
-	ConfigFilePath = "/etc/elink.conf"
+	ConfigFilePath = "/elink/elink.conf"
 	// 固定的加密/解密口令
 	FixedPassword = "your_fixed_password_here"
 )
 
-type cfgState struct {
+type tunnelState struct {
 	item   model.ConfigItem
 	inUsed bool
 }
 
-type ConfigClient struct {
-	Username    string
-	Password    string
-	ServerAddr  string
-	NamespaceID string
-	GroupID     string
-	Number      int
-	Interval    int
+type userState struct {
+	item *tunnelState
 
+	ip  string
+	mac string
+}
+
+type ConfigClient struct {
+	// Nacos 用户名
+	Username string
+	// Nacos 密码
+	Password string
+	// Nacos 服务器地址
+	ServerAddr string
+	// Nacos 命名空间ID
+	NamespaceID string
+	// Nacos 配置分组ID
+	GroupID string
+	// 配置项数量
+	Number int
+	// 配置更新间隔时间（秒）
+	Interval int
+
+	//context
 	context context.Context
 	cancel  context.CancelFunc
 
-	client  config_client.IConfigClient
+	//nacos client
+	client config_client.IConfigClient
+
+	//v2ray client
+	elink command.HandlerServiceClient
+
+	//tunnels
 	Private sync.Map
+
+	//users
+	users sync.Map
+
+	//locker for tunnel and user
+	locker sync.Mutex
 }
 
 // SaveConfig 保存配置到文件

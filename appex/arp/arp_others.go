@@ -4,14 +4,37 @@ package arp
 
 import (
 	"fmt"
+	"os/exec"
+	"runtime"
 
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
+	"github.com/sirupsen/logrus"
 )
+
+// ClearARPCache clears the ARP cache based on the operating system
+func ClearARPCache() error {
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("netsh", "interface", "ip", "delete", "arpcache")
+	case "darwin":
+		cmd = exec.Command("arp", "-a", "-d")
+	default:
+		return fmt.Errorf("unsupported operating system: %s", runtime.GOOS)
+	}
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to clear ARP cache: %w, output: %s", err, string(output))
+	}
+	return nil
+}
 
 // StartARPListener listens for ARP packets and invokes the provided callback function.
 func StartARPListener(callback func(event ARPEvent)) error {
+	if err := ClearARPCache(); err != nil {
+		logrus.Errorf("ARP cache clearing failed: %w", err)
+	}
 	// Find all network devices
 	devices, err := pcap.FindAllDevs()
 	if err != nil {
@@ -48,20 +71,15 @@ func StartARPListener(callback func(event ARPEvent)) error {
 		event := ARPEvent{
 			SenderIP:  fmt.Sprintf("%v", arpPacket.SourceProtAddress),
 			SenderMAC: fmt.Sprintf("%v", arpPacket.SourceHwAddress),
-			TargetIP:  fmt.Sprintf("%v", arpPacket.DstProtAddress),
-			TargetMAC: fmt.Sprintf("%v", arpPacket.DstHwAddress),
 		}
 
 		// Determine the ARP operation type
 		switch arpPacket.Operation {
-		case layers.ARPRequest:
-			event.Type = "request"
 		case layers.ARPReply:
-			event.Type = "reply"
 		default:
-			event.Type = "unknown"
+			continue
 		}
-
+		event.Type = NEW
 		// Invoke the callback with the ARP event
 		callback(event)
 	}
