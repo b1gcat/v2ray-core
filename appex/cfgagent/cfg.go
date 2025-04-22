@@ -63,13 +63,13 @@ type ConfigClient struct {
 	elink command.HandlerServiceClient
 
 	//tunnels
-	Private sync.Map
+	tunnels sync.Map
 
 	//users
 	users sync.Map
 
-	//locker for tunnel and user
-	locker sync.Mutex
+	//lock for new/del/mod user
+	lock sync.Mutex
 }
 
 // SaveConfig 保存配置到文件

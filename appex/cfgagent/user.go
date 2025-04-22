@@ -17,9 +17,9 @@ func (cfg *ConfigClient) handleARP(event arp.ARPEvent) {
 			logrus.Error("Failed to handle new user: ", err)
 		}
 	case arp.DELETE:
-		cfg.locker.Lock()
+		cfg.lock.Lock()
 		cfg._delUser(event)
-		cfg.locker.Unlock()
+		cfg.lock.Unlock()
 	default:
 		logrus.Warn("Unknown ARP event type:", event.Type)
 	}
@@ -31,8 +31,9 @@ func (cfg *ConfigClient) newUser(event arp.ARPEvent) error {
 		ip:  event.SenderIP,
 		mac: event.SenderMAC,
 	}
-	cfg.locker.Lock()
-	defer cfg.locker.Unlock()
+
+	cfg.lock.Lock()
+	defer cfg.lock.Unlock()
 
 	if oldUser, exists := cfg.users.LoadOrStore(event.SenderMAC, &user); exists {
 		if oldUser.(*userState).ip == event.SenderIP {
@@ -44,14 +45,59 @@ func (cfg *ConfigClient) newUser(event arp.ARPEvent) error {
 		}
 	}
 
-	cfg.users.Store(event.SenderMAC, user)
-	logrus.Info("New user:", event.SenderMAC)
+	allocOk := false
+
+	cfg.tunnels.Range(func(key, value any) bool {
+		item := key.(*tunnelState)
+
+		if item.inUsed {
+			return true
+		}
+
+		item.inUsed = true
+		user.item = item
+
+		cfg.users.Store(event.SenderMAC, user)
+
+		allocOk = true
+
+		return false
+	})
+
+	if allocOk {
+		logrus.Info("New user:", event.SenderMAC)
+	} else {
+		logrus.Warn("New user, but no tunnel available:", event.SenderMAC)
+	}
+
 	return nil
 }
 
 func (cfg *ConfigClient) _delUser(event arp.ARPEvent) error {
 	cfg.users.Delete(event.SenderMAC)
 	logrus.Info("Del user:", event.SenderMAC)
+	return nil
+}
+
+func (cfg *ConfigClient) modUser(nameSpace, dataId string) error {
+
+	cfg.lock.Lock()
+	defer cfg.lock.Unlock()
+
+	cfg.users.Range(func(key, value any) bool {
+		user := value.(*userState)
+		if user.item.item.DataId == dataId {
+			user.item.inUsed = false
+
+			cfg._delUser(arp.ARPEvent{SenderMAC: user.mac, SenderIP: user.ip})
+
+			logrus.Info("Mod user:", key)
+			return false
+		}
+		return true
+	})
+
+	// 检查用户是否已存在
 	return nil
 }
 

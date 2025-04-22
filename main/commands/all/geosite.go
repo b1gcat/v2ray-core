@@ -37,6 +37,8 @@ var getSiteDirectory = cmdGeoSite.Flag.String("directory", "", "Path to the gets
 func executeGeoSite(cmd *base.Command, args []string) {
 	dir := *getSiteDirectory
 	fmt.Println("Use domain lists in", dir)
+	parentDir := filepath.Dir(dir)
+	lastDirName := filepath.Base(dir)
 
 	ref := make(map[string]*List)
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
@@ -83,7 +85,7 @@ func executeGeoSite(cmd *base.Command, args []string) {
 			fmt.Println("Failed:", err)
 			os.Exit(1)
 		}
-		if err := os.WriteFile("geosite.dat", protoBytes, 0644); err != nil {
+		if err := os.WriteFile(filepath.Join(parentDir, lastDirName+".geosite.dat"), protoBytes, 0644); err != nil {
 			fmt.Println("Failed: ", err)
 			os.Exit(1)
 		} else {

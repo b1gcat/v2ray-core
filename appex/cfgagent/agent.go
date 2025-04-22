@@ -64,7 +64,7 @@ func (cfg *ConfigClient) hotLoadConfig() error {
 
 		// 监听配置变化
 		// 检查是否已经存在配置隧道
-		if _, ok := cfg.Private.Load(item.DataId); ok {
+		if _, ok := cfg.tunnels.Load(item.DataId); ok {
 			continue
 		}
 		if err = cfg.client.ListenConfig(vo.ConfigParam{
@@ -74,7 +74,7 @@ func (cfg *ConfigClient) hotLoadConfig() error {
 
 				if data == "" {
 					// 删除配置隧道
-					cfg.Private.Delete(dataId)
+					cfg.tunnels.Delete(dataId)
 					// 释放资源
 					cfg.client.CancelListenConfig(vo.ConfigParam{
 						DataId: dataId,
@@ -92,7 +92,7 @@ func (cfg *ConfigClient) hotLoadConfig() error {
 			return fmt.Errorf("failed to listen config: %w", err)
 		}
 		// 新增配置隧道
-		cfg.Private.Store(item.DataId, &tunnelState{
+		cfg.tunnels.Store(item.DataId, &tunnelState{
 			item:   item,
 			inUsed: false,
 		})
