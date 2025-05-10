@@ -54,6 +54,10 @@ func NewClient(ctx context.Context, config *ClientConfig) (*Client, error) {
 	if config.Version == Version_SOCKS4 {
 		c.dns = v.GetFeature(dns.ClientType()).(dns.Client)
 	}
+	//add by b1gcat 2024.03.16
+	//force socks5 to delay auth write
+	c.delayAuthWrite = true
+	// end by b1gcat 2024.03.16
 
 	return c, nil
 }

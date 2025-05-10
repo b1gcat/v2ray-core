@@ -5,7 +5,7 @@
       {
         "inboundTag": ["pfx:dns-","pfx:transparent-","pfx:localside-s5-"],
         "type": "field",
-        "outboundTag": "proxy-s5-xxxx"
+        "outboundTag": "append:proxy-s5-"
       }
     ]
   }
